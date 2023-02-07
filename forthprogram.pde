@@ -95,8 +95,8 @@ enum ProgramState {
 
 class Program {
   // fixed parameters
-  final int cells_x, cells_y;
-  final int origin_x, origin_y;
+  final int columns, rows;
+  final int originRow, originCol;
   
   // program data
   final Instruction[][] grid;
@@ -105,7 +105,7 @@ class Program {
   final float[][] push_data;
   
   // program state
-  int current_x, current_y;
+  int executingRow, executingCol;
   int input_cursor;
   ProgramState state;
   String error_message;
@@ -115,22 +115,22 @@ class Program {
   final ArrayList<Float> output = new ArrayList<>();
   
   // Create and initialize an empty program grid.
-  Program(int cells_x, int cells_y, int origin_x, int origin_y) {
-    this.cells_x = cells_x;
-    this.cells_y = cells_y;
-    this.origin_x = origin_x;
-    this.origin_y = origin_y;
+  Program(int columns, int rows, int originRow, int originCol) {
+    this.columns = columns;
+    this.rows = rows;
+    this.originRow = originRow;
+    this.originCol = originCol;
 
-    grid = new Instruction[cells_x][];
-    direction_1 = new Direction[cells_x][];
-    direction_2 = new Direction[cells_x][];
-    push_data = new float[cells_x][];
-    for (int i=0; i < cells_x; ++i) {
-      grid[i] = new Instruction[cells_y];
-      direction_1[i] = new Direction[cells_y];
-      direction_2[i] = new Direction[cells_y];
-      push_data[i] = new float[cells_y];
-      for (int j=0; j < cells_y; ++j) {
+    grid = new Instruction[columns][];
+    direction_1 = new Direction[columns][];
+    direction_2 = new Direction[columns][];
+    push_data = new float[columns][];
+    for (int i=0; i < columns; ++i) {
+      grid[i] = new Instruction[rows];
+      direction_1[i] = new Direction[rows];
+      direction_2[i] = new Direction[rows];
+      push_data[i] = new float[rows];
+      for (int j=0; j < rows; ++j) {
         grid[i][j] = Instruction.EMPTY;
         direction_1[i][j] = Direction.UP;
         direction_2[i][j] = Direction.DOWN;
@@ -142,13 +142,21 @@ class Program {
   }
   
   void reset() {
-    current_x = this.origin_x;
-    current_y = this.origin_y;
+    executingRow = this.originRow;
+    executingCol = this.originCol;
     state = ProgramState.READY;
     input_cursor = 0;
     stack.clear();
     output.clear();
     error_message = "";
+  }
+  
+  void clear() {
+    for (int i=0; i < columns; ++i) {
+      for (int j=0; j < rows; ++j) {
+        grid[i][j] = Instruction.EMPTY;
+      }
+    }
   }
   
   void setInput(float[] data) {
@@ -157,25 +165,29 @@ class Program {
     }
   }
   
-  void setPushData(int x, int y, float data, Direction d1) {
-    grid[x][y] = Instruction.PUSH;
-    push_data[x][y] = data;
-    direction_1[x][y] = d1;
+  Program setPush(int i, int j, float data, Direction d1) {
+    grid[i][j] = Instruction.PUSH;
+    push_data[i][j] = data;
+    direction_1[i][j] = d1;
+    return this;
   }
   
-  void setInstr(int x, int y, Instruction instr, Direction d1) {
-    grid[x][y] = instr;
-    direction_1[x][y] = d1;
+  Program setInst(int i, int y, Instruction instr, Direction d1) {
+    grid[i][y] = instr;
+    direction_1[i][y] = d1;
+    return this;
   }
   
-  void setInstr(int x, int y, Instruction instr) {
-    grid[x][y] = instr;
+  Program setInst(int i, int y, Instruction instr) {
+    grid[i][y] = instr;
+    return this;
   }
   
-  void setConditional(int x, int y, Direction d1, Direction d2) {
-    grid[x][y] = Instruction.IF;
-    direction_1[x][y] = d1;
-    direction_2[x][y] = d2;
+  Program setCond(int i, int y, Direction d1, Direction d2) {
+    grid[i][y] = Instruction.IF;
+    direction_1[i][y] = d1;
+    direction_2[i][y] = d2;
+    return this;
   }
 
   void raiseError(String message) {
@@ -209,11 +221,11 @@ class Program {
     }
     
     // things the instruction can modify:
-    Direction next = direction_1[current_x][current_y];
+    Direction next = direction_1[executingRow][executingCol];
     float a, b;
     
     // case analysis on instruction:
-    switch (grid[current_x][current_y]) {
+    switch (grid[executingRow][executingCol]) {
       case EMPTY:
         raiseError("no instruction");
         return false;
@@ -323,7 +335,7 @@ class Program {
       case NOOP:
         break;
       case PUSH:
-        stack.add(push_data[current_x][current_y]);
+        stack.add(push_data[executingRow][executingCol]);
         break;
       case EOF:
         stack.add(input_cursor >= input.size()? 1.0 : 0.0);
@@ -332,39 +344,39 @@ class Program {
         if (!checkMinStack(1)) return false;
         a = popStack();
         if (a == 0.0) {
-          next = direction_2[current_x][current_y];
+          next = direction_2[executingRow][executingCol];
         }
         break;
     }
     
     switch (next) {
       case LEFT:
-        if (current_x == 0) {
+        if (executingRow == 0) {
           raiseError("program fell out of bounds");
           return false;
         }
-        --current_x;
+        --executingRow;
         break;
       case RIGHT:
-        if (current_x == cells_x-1) {
+        if (executingRow == columns-1) {
           raiseError("program fell out of bounds");
           return false;
         }
-        ++current_x;
+        ++executingRow;
         break;
       case UP:
-        if (current_y == 0) {
+        if (executingCol == 0) {
           raiseError("program fell out of bounds");
           return false;
         }
-        --current_y;
+        --executingCol;
         break;
       case DOWN:
-        if (current_y == cells_y-1) {
+        if (executingCol == rows-1) {
           raiseError("program fell out of bounds");
           return false;
         }
-        ++current_y;
+        ++executingCol;
         break;
     }
     

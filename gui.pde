@@ -35,11 +35,11 @@ abstract class Widget {
     }
   }
   
-  final float relativeMouseX() {
+  final float mouseX() {
     return mouseX - absoluteX();
   }
   
-  final float relativeMouseY() {
+  final float mouseY() {
     return mouseY - absoluteY();
   }
   
@@ -192,8 +192,8 @@ class InputDialog extends Widget {
   
   boolean mouseClicked() {
    final float width = textWidth(prompt + result + "|");
-   final float mX = relativeMouseX();
-   final float mY = relativeMouseY();
+   final float mX = mouseX();
+   final float mY = mouseY();
    if (mX < 0 || mX > width || mY < 0 || mY > 50) {
      if (listener != null) listener.cancelled();
      destroy();
