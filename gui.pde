@@ -1,3 +1,4 @@
+// A very simple widget UI framework for processing. 
 
 abstract class Widget {
   private float x;

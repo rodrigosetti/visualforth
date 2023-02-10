@@ -23,7 +23,8 @@ class ProgramWidget extends Widget {
         
         pushMatrix();
         translate(i * cellSize, j * cellSize);
-        stroke(0);
+        stroke(46, 46, 46);
+        strokeWeight(2);
         if (current) {
           switch (program.state) {
             case READY:
@@ -58,6 +59,21 @@ class ProgramWidget extends Widget {
           case EMPTY:
             cellText = "";
             break;
+          case ADD:
+            cellText = "+";
+            break;
+          case SUB:
+            cellText = "-";
+            break;
+          case MUL:
+            cellText = "*";
+            break;       
+          case DIV:
+            cellText = "/";
+            break;       
+          case MOD:
+            cellText = "%";
+            break;       
           case EQ:
             cellText = "=";
             break;
@@ -77,7 +93,7 @@ class ProgramWidget extends Widget {
             cellText = ">=";
             break;
           case NOOP:
-            cellText = ".";
+            cellText = "";
             break;
           default:
             cellText = instr.toString();
@@ -93,7 +109,7 @@ class ProgramWidget extends Widget {
           pushMatrix();
           translate(cellSize/2, cellSize/2);
           
-          fill(0, 200, 0);
+          fill(40, 175, 176);
           pushMatrix();
           rotate(rotation(program.direction_1[i][j]));
           translate(cellSize/2 - 5, 0);
@@ -101,7 +117,7 @@ class ProgramWidget extends Widget {
           popMatrix();
           
           if (mode == DirectionMode.SPLIT) {
-            fill(200, 0, 0);
+            fill(180, 67, 108);
             pushMatrix();
             rotate(rotation(program.direction_2[i][j]));
             translate(cellSize/2 - 5, 0);
@@ -167,12 +183,9 @@ class ProgramWidget extends Widget {
     return false;
   }
   
-  boolean mouseClicked() {
-    final float mX = mouseX();
-    final float mY = mouseY();
-    
-    final int i = floor(mX / cellSize);
-    final int j = floor(mY / cellSize);
+  boolean mouseClicked() {    
+    final int i = hoveringRow;
+    final int j = hoveringCol;
     
     class InputInstruction implements InputListener {
       private final Program program;
@@ -276,7 +289,7 @@ class InputTextWidget extends DynamicTextWidget {
     String inputText = "INPUT: ";
     for (int i = 0; i < program.input.size(); ++i) {
       final float v = program.input.get(i);
-      if (i == program.input_cursor) {
+      if (i == program.inputCursor) {
         inputText += "[" + String.valueOf(v) + "] ";
       } else {
         inputText += String.valueOf(v) + " ";
@@ -314,7 +327,7 @@ class ErrorMessagetWidget extends DynamicTextWidget {
   }
   
   String getText() {
-    return program.error_message;
+    return program.errorMessage;
   }
 }
 
@@ -334,12 +347,12 @@ class StackWidget extends Widget {
     pushMatrix();
     transform();
 
-    stroke(255, 255, 0);
+    stroke(242, 212, 146);
     noFill();
     rect(-5, 0, 100, MAX_SIZE*LINE_SIZE);
 
     textAlign(LEFT, BOTTOM);
-    fill(255, 255, 0);
+    fill(242, 212, 146);
     text("STACK:", 0, 0);
 
     translate(0, (MAX_SIZE - program.stack.size()) * LINE_SIZE);
@@ -374,11 +387,11 @@ Program example2() {
   float[] input = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
   p.setInput(input);
   
-  p.setInst(5, 4, Instruction.EOF, Direction.UP);
-  p.setCond(5, 3, Direction.RIGHT, Direction.LEFT);
-  p.setInst(6, 3, Instruction.HALT);
-  p.setInst(4, 3, Instruction.READ, Direction.DOWN);
-  p.setInst(4, 4, Instruction.WRITE, Direction.RIGHT);
+  p.setInst(5, 4, Instruction.EOF, Direction.UP)
+   .setCond(5, 3, Direction.RIGHT, Direction.LEFT)
+   .setInst(6, 3, Instruction.HALT)
+   .setInst(4, 3, Instruction.READ, Direction.DOWN)
+   .setInst(4, 4, Instruction.WRITE, Direction.RIGHT);
   
   return p;
 }
@@ -486,8 +499,7 @@ void setup() {
 void draw() {
   main.update();
 
-  background(255, 255, 255);
-  clear();
+  background(46, 46, 46);
   
   main.draw();
 }

@@ -1,36 +1,38 @@
 
 enum Instruction {
-  // 0 directions (sink)
-  EMPTY, // default
-  HALT,
+  // 0 directions (terminal)
+  EMPTY, // no instruction (default). terminate in error.
+  HALT, // terminates the program normally.
   
   // 1 direction (operation)
-  READ,
-  WRITE,
-  DUP,
-  DROP,
-  EQ,
-  NE,
-  LT,
-  LE,
-  GT,
-  GE,
-  ABS,
-  ADD,
-  SUB,
-  MUL,
-  DIV,
-  MOD,
-  NOOP,
-  PUSH,
-  EOF,
-  OVER,
-  SWAP,
+  READ, // read value from input and push to stack
+  WRITE, // pop values from stack and write to output.
+  DUP, // push a copy of the top of the stack.
+  DROP, // pop and ignore
+  EQ, // pop two values and push 1 if equal or 0 if not
+  NE, // same for !=
+  LT, // same for <
+  LE, // same for <=
+  GT, // same for >
+  GE, // same for >=
+  ABS, // pop and push the absolute
+  ADD, // pop two numbers and push their sum
+  SUB, // same for subtraction
+  MUL, // same for product
+  DIV, // same for division
+  MOD, // same for modulus
+  NOOP, // does nothing
+  PUSH, // push a value to the stack
+  EOF, // if the input has reached the end push 1 else 0
+  OVER, // push the value just below the top of the stack
+  SWAP, // swap the top 2 values in the stack
   
   // 2 directions (conditionals)
-  IF
+  IF // pop from stack: if not zero continue to normal direction, else to alternative direction
 }
 
+// Enumeration of the 4 directions the execution can continue
+// from every instruction in the grid.
 enum Direction {
   UP,
   RIGHT,
@@ -38,6 +40,7 @@ enum Direction {
   LEFT
 }
 
+// Maps a direction enum to a gradian rotation.
 float rotation(Direction d) {
   switch (d) {
     case UP:
@@ -53,6 +56,7 @@ float rotation(Direction d) {
   }
 }
 
+// Maps a direction to the next direction clockwise.
 Direction nextClockwise(Direction d) {
   switch (d) {
     case UP:
@@ -68,12 +72,14 @@ Direction nextClockwise(Direction d) {
   }
 }
 
+// Enumeration of all possible kinds of instruction w.r.t execution direction.
 enum DirectionMode {
   SINK, // e.g. HALT
   SINGLE, // e.g. PUSH, ADD, LE, etc.
   SPLIT // e.g. IF
 }
 
+// Maps an instruction to its direction mode.
 DirectionMode directionMode(Instruction i) {
   switch (i) {
     case HALT:
@@ -86,6 +92,7 @@ DirectionMode directionMode(Instruction i) {
   }
 }
 
+// Enumeration of possible states the program is in.
 enum ProgramState {
   READY,
   RUNNING,
@@ -93,22 +100,23 @@ enum ProgramState {
   ERROR
 }
 
+// 2D Forth virtual machine.
 class Program {
   // fixed parameters
-  final int columns, rows;
-  final int originRow, originCol;
+  final int columns, rows; // number of cols and rows
+  final int originRow, originCol; // start of the execution
   
   // program data
-  final Instruction[][] grid;
-  final Direction[][] direction_1;
-  final Direction[][] direction_2;
-  final float[][] push_data;
+  final Instruction[][] grid;  // instruction ops
+  final Direction[][] direction_1; // normal direction flow
+  final Direction[][] direction_2; // alternative direction flow
+  final float[][] push_data; // data to be pushed (only PUSH instruction)
   
   // program state
-  int executingRow, executingCol;
-  int input_cursor;
-  ProgramState state;
-  String error_message;
+  int executingRow, executingCol; // current execution
+  int inputCursor; // current input position
+  ProgramState state; // state of the program.
+  String errorMessage; // error message, if state is ERROR
   
   final ArrayList<Float> stack = new ArrayList<>();
   final ArrayList<Float> input = new ArrayList<>();
@@ -145,10 +153,10 @@ class Program {
     executingRow = this.originRow;
     executingCol = this.originCol;
     state = ProgramState.READY;
-    input_cursor = 0;
+    inputCursor = 0;
     stack.clear();
     output.clear();
-    error_message = "";
+    errorMessage = "";
   }
   
   void clear() {
@@ -192,7 +200,7 @@ class Program {
 
   void raiseError(String message) {
     state = ProgramState.ERROR;
-    error_message = message;
+    errorMessage = message;
   }
   
   boolean checkMinStack(int min) {
@@ -233,11 +241,11 @@ class Program {
         state = ProgramState.TERMINATED;
         return false;
       case READ:
-        if (input_cursor >= input.size()) {
+        if (inputCursor >= input.size()) {
           raiseError("end of input");
           return false;
         }
-        stack.add(input.get(input_cursor++));
+        stack.add(input.get(inputCursor++));
         break;
       case WRITE:
         if (!checkMinStack(1)) return false;
@@ -338,7 +346,7 @@ class Program {
         stack.add(push_data[executingRow][executingCol]);
         break;
       case EOF:
-        stack.add(input_cursor >= input.size()? 1.0 : 0.0);
+        stack.add(inputCursor >= input.size()? 1.0 : 0.0);
         break;
       case IF:
         if (!checkMinStack(1)) return false;
