@@ -2,6 +2,8 @@
 
 Proof of concept of a 2D FORTH Virtual Machine in Processing.
 
+![screen shot](./screen.png)
+
 ## How to program?
 
 Click the cells to edit the instruction. Type the instruction op-code and enter
